@@ -23,6 +23,7 @@ import it.jaschke.alexandria.data.AlexandriaContract;
 import it.jaschke.alexandria.services.BookService;
 import it.jaschke.alexandria.services.DownloadImage;
 import it.jaschke.alexandria.util.NetworkUtil;
+import it.jaschke.alexandria.util.ViewHelper;
 
 
 public class AddBook extends Fragment implements LoaderManager.LoaderCallbacks<Cursor> {
@@ -31,6 +32,7 @@ public class AddBook extends Fragment implements LoaderManager.LoaderCallbacks<C
     private final int LOADER_ID = 1;
     private View rootView;
     private final String EAN_CONTENT="eanContent";
+    private final ViewHelper viewHelper = new ViewHelper();
 
     public AddBook(){
     }
@@ -162,16 +164,13 @@ public class AddBook extends Fragment implements LoaderManager.LoaderCallbacks<C
         Log.d(TAG, "setting isbn from found book into book title tag " + isbn);
         bookTitleView.setTag(isbn);
 
-//        int isbn = data.getInt(data.getColumnIndex(AlexandriaContract.BookEntry._ID));
-//        ((TextView) rootView.findViewById(R.id .isbn)).setText(""+isbn);
-
         String bookSubTitle = data.getString(data.getColumnIndex(AlexandriaContract.BookEntry.SUBTITLE));
         ((TextView) rootView.findViewById(R.id.bookSubTitle)).setText(bookSubTitle);
 
         String authors = data.getString(data.getColumnIndex(AlexandriaContract.AuthorEntry.AUTHOR));
-        String[] authorsArr = authors.split(",");
-        ((TextView) rootView.findViewById(R.id.authors)).setLines(authorsArr.length);
-        ((TextView) rootView.findViewById(R.id.authors)).setText(authors.replace(",","\n"));
+        TextView authorsView = (TextView) rootView.findViewById(R.id.authors);
+        viewHelper.setAuthors(authors, authorsView);
+
         String imgUrl = data.getString(data.getColumnIndex(AlexandriaContract.BookEntry.IMAGE_URL));
         if(NetworkUtil.isNetworkAvailable(getActivity()) && Patterns.WEB_URL.matcher(imgUrl).matches()){
             new DownloadImage((ImageView) rootView.findViewById(R.id.bookCover)).execute(imgUrl);
@@ -179,7 +178,8 @@ public class AddBook extends Fragment implements LoaderManager.LoaderCallbacks<C
         }
 
         String categories = data.getString(data.getColumnIndex(AlexandriaContract.CategoryEntry.CATEGORY));
-        ((TextView) rootView.findViewById(R.id.categories)).setText(categories);
+        TextView categoriesView = (TextView) rootView.findViewById(R.id.categories);
+        viewHelper.setCategories(categories, categoriesView);
 
         rootView.findViewById(R.id.save_button).setVisibility(View.VISIBLE);
         rootView.findViewById(R.id.delete_button).setVisibility(View.VISIBLE);

@@ -22,6 +22,7 @@ import it.jaschke.alexandria.data.AlexandriaContract;
 import it.jaschke.alexandria.services.BookService;
 import it.jaschke.alexandria.services.DownloadImage;
 import it.jaschke.alexandria.util.NetworkUtil;
+import it.jaschke.alexandria.util.ViewHelper;
 
 
 public class BookDetail extends Fragment implements LoaderManager.LoaderCallbacks<Cursor> {
@@ -32,6 +33,7 @@ public class BookDetail extends Fragment implements LoaderManager.LoaderCallback
     private String ean;
     private String bookTitle;
     private ShareActionProvider shareActionProvider;
+    private final ViewHelper viewHelper = new ViewHelper();
 
     public BookDetail(){
     }
@@ -111,9 +113,9 @@ public class BookDetail extends Fragment implements LoaderManager.LoaderCallback
         ((TextView) rootView.findViewById(R.id.fullBookDesc)).setText(desc);
 
         String authors = data.getString(data.getColumnIndex(AlexandriaContract.AuthorEntry.AUTHOR));
-        String[] authorsArr = authors.split(",");
-        ((TextView) rootView.findViewById(R.id.authors)).setLines(authorsArr.length);
-        ((TextView) rootView.findViewById(R.id.authors)).setText(authors.replace(",","\n"));
+        TextView authorsView = (TextView) rootView.findViewById(R.id.authors);
+        viewHelper.setAuthors(authors, authorsView);
+
         String imgUrl = data.getString(data.getColumnIndex(AlexandriaContract.BookEntry.IMAGE_URL));
         if(NetworkUtil.isNetworkAvailable(getActivity()) && Patterns.WEB_URL.matcher(imgUrl).matches()){
             new DownloadImage((ImageView) rootView.findViewById(R.id.fullBookCover)).execute(imgUrl);
@@ -121,7 +123,8 @@ public class BookDetail extends Fragment implements LoaderManager.LoaderCallback
         }
 
         String categories = data.getString(data.getColumnIndex(AlexandriaContract.CategoryEntry.CATEGORY));
-        ((TextView) rootView.findViewById(R.id.categories)).setText(categories);
+        TextView categoriesView = (TextView) rootView.findViewById(R.id.categories);
+        viewHelper.setCategories(categories, categoriesView);
 
         if(rootView.findViewById(R.id.right_container)!=null){
             rootView.findViewById(R.id.backButton).setVisibility(View.INVISIBLE);

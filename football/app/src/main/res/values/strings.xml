@@ -56,5 +56,8 @@
     <string name="widget_header_test_text">2015-10-24 05:00</string>
     <string name="widget_preview_home_team_test_text">Stuttgarter Kickers</string>
     <string name="widget_preview_away_team_test_text">Wumblrburger Kickers</string>
+    <string name="contentDescription_shareMatchInfo">Share match information</string>
+    <string name="contentDescription_home_crest_image">Home crest image</string>
+    <string name="contentDescription_away_crest_image">Away crest image</string>
 
 </resources>
