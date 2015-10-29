@@ -126,10 +126,6 @@ public class BookDetail extends Fragment implements LoaderManager.LoaderCallback
         TextView categoriesView = (TextView) rootView.findViewById(R.id.categories);
         viewHelper.setCategories(categories, categoriesView);
 
-        if(rootView.findViewById(R.id.right_container)!=null){
-            rootView.findViewById(R.id.backButton).setVisibility(View.INVISIBLE);
-        }
-
     }
 
     @Override
