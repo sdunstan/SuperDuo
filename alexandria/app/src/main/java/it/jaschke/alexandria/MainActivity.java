@@ -5,7 +5,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.res.Configuration;
-import android.hardware.Camera;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
@@ -13,22 +12,19 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarActivity;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
-import android.view.inputmethod.InputMethodManager;
 import android.widget.Toast;
 
-import com.google.zxing.client.android.camera.CameraConfigurationUtils;
-
 import it.jaschke.alexandria.api.Callback;
-import it.jaschke.alexandria.camera.CameraPreview;
-import it.jaschke.alexandria.util.CameraHelper;
 
 
 public class MainActivity extends ActionBarActivity implements NavigationDrawerFragment.NavigationDrawerCallbacks, Callback {
     private static final String TAG = MainActivity.class.getSimpleName();
+    private static final String FRAGMENT_LIST_OF_BOOKS = "FRAGMENT_LIST_OF_BOOKS";
+    private static final String FRAGMENT_ADD_BOOK = "FRAGMENT_ADD_BOOK";
+    private static final String FRAGMENT_ABOUT = "FRAGMENT_ABOUT";
+
 
     /**
      * Fragment managing the behaviors, interactions and presentation of the navigation drawer.
@@ -41,17 +37,9 @@ public class MainActivity extends ActionBarActivity implements NavigationDrawerF
     private CharSequence title;
     public static boolean IS_TABLET = false;
     private BroadcastReceiver messageReceiver;
-    private ScanBarcodeReceiver scanBarcodeReceiver;
 
     public static final String MESSAGE_EVENT = "MESSAGE_EVENT";
     public static final String MESSAGE_KEY = "MESSAGE_EXTRA";
-
-    // 4:3 target, e.g., 640x480
-    private static final int TARGET_RATIO_WIDTH = 4;
-    private static final int TARGET_RATIO_HEIGHT = 3;
-
-    private String mScannedValue;
-    private Camera mCamera;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -68,11 +56,6 @@ public class MainActivity extends ActionBarActivity implements NavigationDrawerF
                 messageReceiver,
                 new IntentFilter(MESSAGE_EVENT));
 
-        scanBarcodeReceiver = new ScanBarcodeReceiver();
-        LocalBroadcastManager.getInstance(this).registerReceiver(
-                scanBarcodeReceiver,
-                new IntentFilter(CameraPreview.BROADCAST_ACTION));
-
         navigationDrawerFragment = (NavigationDrawerFragment)
                 getSupportFragmentManager().findFragmentById(R.id.navigation_drawer);
         title = getTitle();
@@ -88,23 +71,27 @@ public class MainActivity extends ActionBarActivity implements NavigationDrawerF
 
         FragmentManager fragmentManager = getSupportFragmentManager();
         Fragment nextFragment;
+        String fragmentTag;
 
         switch (position){
             default:
             case 0:
                 nextFragment = new ListOfBooks();
+                fragmentTag = FRAGMENT_LIST_OF_BOOKS;
                 break;
             case 1:
                 nextFragment = new AddBook();
+                fragmentTag = FRAGMENT_ADD_BOOK;
                 break;
             case 2:
                 nextFragment = new About();
+                fragmentTag = FRAGMENT_ABOUT;
                 break;
 
         }
 
         fragmentManager.beginTransaction()
-                .replace(R.id.container, nextFragment)
+                .replace(R.id.container, nextFragment, fragmentTag)
                 .addToBackStack((String) title)
                 .commit();
     }
@@ -152,7 +139,6 @@ public class MainActivity extends ActionBarActivity implements NavigationDrawerF
     @Override
     protected void onDestroy() {
         LocalBroadcastManager.getInstance(this).unregisterReceiver(messageReceiver);
-        LocalBroadcastManager.getInstance(this).unregisterReceiver(scanBarcodeReceiver);
 
         super.onDestroy();
     }
@@ -176,34 +162,6 @@ public class MainActivity extends ActionBarActivity implements NavigationDrawerF
 
     }
 
-    public void pushScanBarcodeFragment() {
-        ScanBarcode fragment = ScanBarcode.newInstance();
-        int id = R.id.container;
-        if(findViewById(R.id.right_container) != null){
-            id = R.id.right_container;
-        }
-        getSupportFragmentManager().beginTransaction()
-                .replace(id, fragment)
-                .addToBackStack("ScanBarcode")
-                .commit();
-    }
-
-    public void onBarcodeDecoded(String barcodeString) {
-        mScannedValue = barcodeString;
-    }
-
-    public String getLastScannedValue() { return mScannedValue; }
-
-    public void scanClicked(View view) {
-        mScannedValue = null;
-        View viewWithFocus = this.getCurrentFocus();
-        if (viewWithFocus != null) {
-            InputMethodManager imm = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
-            imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
-        }
-        pushScanBarcodeFragment();
-    }
-
     private class MessageReciever extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -225,67 +183,6 @@ public class MainActivity extends ActionBarActivity implements NavigationDrawerF
             finish();
         }
         super.onBackPressed();
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        openCamera();
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        releaseCamera();
-    }
-
-    public Camera getCamera() {
-        return mCamera;
-    }
-
-    private void releaseCamera() {
-        if (mCamera != null) {
-            mCamera.stopPreview();
-            mCamera.release();
-            mCamera = null;
-        }
-    }
-
-    private void openCamera() {
-        mCamera = CameraHelper.getCameraInstance();
-        if (mCamera == null) {
-            Log.w(TAG, "Can't get camera instance.");
-            return;
-        }
-
-        Camera.Parameters parameters = mCamera.getParameters();
-        CameraConfigurationUtils.setBestPreviewFPS(parameters);
-        CameraConfigurationUtils.setBarcodeSceneMode(parameters);
-        CameraConfigurationUtils.setVideoStabilization(parameters);
-        CameraConfigurationUtils.setMetering(parameters);
-        CameraConfigurationUtils.setBestExposure(parameters, false);
-        CameraConfigurationUtils.setZoom(parameters, 2);
-        CameraConfigurationUtils.setFocus(parameters, true, false, false);
-
-        Camera.Size size = CameraHelper.findBestSize(mCamera, TARGET_RATIO_WIDTH, TARGET_RATIO_HEIGHT);
-        Log.d(TAG, "Using this size for preview: " + size.width + "x" + size.height);
-        parameters.setPreviewSize(size.width, size.height);
-        parameters.setPictureSize(size.width, size.height);
-
-        mCamera.setParameters(parameters);
-    }
-
-    public class ScanBarcodeReceiver extends BroadcastReceiver {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            Log.d(TAG, "ScanBarcodeReceiver received message.");
-            String result = intent.getStringExtra(CameraPreview.EXTRA_PARSE_RESULT);
-            if (result != null) {
-                Log.d(TAG, "ScanBarcodeReceiver got result.");
-                onBarcodeDecoded(result);
-                getSupportFragmentManager().popBackStack("ScanBarcode", FragmentManager.POP_BACK_STACK_INCLUSIVE);
-            }
-        }
     }
 
 }

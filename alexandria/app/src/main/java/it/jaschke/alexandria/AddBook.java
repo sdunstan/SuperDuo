@@ -19,6 +19,9 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.zxing.integration.android.IntentIntegrator;
+import com.google.zxing.integration.android.IntentResult;
+
 import it.jaschke.alexandria.data.AlexandriaContract;
 import it.jaschke.alexandria.services.BookService;
 import it.jaschke.alexandria.services.DownloadImage;
@@ -79,13 +82,7 @@ public class AddBook extends Fragment implements LoaderManager.LoaderCallbacks<C
                 if(eanString.length()<13){
                     return;
                 }
-
-                //Once we have an ISBN, start a book intent
-                Intent bookIntent = new Intent(getActivity(), BookService.class);
-                bookIntent.putExtra(BookService.EAN, eanString);
-                bookIntent.setAction(BookService.FETCH_BOOK);
-                getActivity().startService(bookIntent);
-                AddBook.this.restartLoader();
+                addBook(eanString);
             }
         });
 
@@ -113,6 +110,14 @@ public class AddBook extends Fragment implements LoaderManager.LoaderCallbacks<C
             }
         });
 
+        rootView.findViewById(R.id.scan_button).setOnClickListener(new View.OnClickListener() {
+               @Override
+               public void onClick(View view) {
+                   IntentIntegrator.forSupportFragment(AddBook.this).initiateScan();
+               }
+           }
+        );
+
         if(savedInstanceState!=null){
             ean.setText(savedInstanceState.getString(EAN_CONTENT));
             ean.setHint("");
@@ -121,16 +126,51 @@ public class AddBook extends Fragment implements LoaderManager.LoaderCallbacks<C
         return rootView;
     }
 
+//    public void scanClicked(View view) {
+//        View viewWithFocus = this.getCurrentFocus();
+//        if (viewWithFocus != null) {
+//            InputMethodManager imm = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
+//            imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+//        }
+//        new IntentIntegrator(this).initiateScan(); // This will call startActivityForResult.
+//    }
+
+
+
+    /**
+     * Called by the zxing IntentIntegrator when a barcode is found or the user cancels.
+     * @param requestCode
+     * @param resultCode
+     * @param data
+     */
     @Override
-    public void onResume() {
-        super.onResume();
-        String value = ((MainActivity)getActivity()).getLastScannedValue();
-        Log.d(TAG, "Resuming... last scanned value was " + value);
-        if (value != null) {
-            ean.setText(value);
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        IntentResult result = IntentIntegrator.parseActivityResult(requestCode, resultCode, data);
+        if(result != null && result.getContents() != null) {
+            Toast.makeText(getActivity(), "Scanned: " + result.getContents(), Toast.LENGTH_LONG).show();
+            ean.setText(result.getContents());
         }
     }
 
+    private void addBook(String ean) {
+        //Once we have an ISBN, start a book intent
+        Intent bookIntent = new Intent(getActivity(), BookService.class);
+        bookIntent.putExtra(BookService.EAN, ean);
+        bookIntent.setAction(BookService.FETCH_BOOK);
+        getActivity().startService(bookIntent);
+        restartLoader();
+    }
+
+//    @Override
+//    public void onResume() {
+//        super.onResume();
+//        String value = ((MainActivity)getActivity()).getLastScannedValue();
+//        Log.d(TAG, "Resuming... last scanned value was " + value);
+//        if (value != null) {
+//            ean.setText(value);
+//        }
+//    }
+//
     private void restartLoader(){
         getLoaderManager().restartLoader(LOADER_ID, null, this);
     }
