@@ -30,7 +30,7 @@ import it.jaschke.alexandria.util.ViewHelper;
 
 
 public class AddBook extends Fragment implements LoaderManager.LoaderCallbacks<Cursor> {
-    private static final String TAG = "INTENT_TO_SCAN_ACTIVITY";
+    private static final String TAG = "AddBook";
     private EditText ean;
     private final int LOADER_ID = 1;
     private View rootView;
@@ -126,17 +126,6 @@ public class AddBook extends Fragment implements LoaderManager.LoaderCallbacks<C
         return rootView;
     }
 
-//    public void scanClicked(View view) {
-//        View viewWithFocus = this.getCurrentFocus();
-//        if (viewWithFocus != null) {
-//            InputMethodManager imm = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
-//            imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
-//        }
-//        new IntentIntegrator(this).initiateScan(); // This will call startActivityForResult.
-//    }
-
-
-
     /**
      * Called by the zxing IntentIntegrator when a barcode is found or the user cancels.
      * @param requestCode
@@ -161,16 +150,6 @@ public class AddBook extends Fragment implements LoaderManager.LoaderCallbacks<C
         restartLoader();
     }
 
-//    @Override
-//    public void onResume() {
-//        super.onResume();
-//        String value = ((MainActivity)getActivity()).getLastScannedValue();
-//        Log.d(TAG, "Resuming... last scanned value was " + value);
-//        if (value != null) {
-//            ean.setText(value);
-//        }
-//    }
-//
     private void restartLoader(){
         getLoaderManager().restartLoader(LOADER_ID, null, this);
     }
